@@ -1,0 +1,203 @@
+#include"gtim.h"
+#include"tim.h"
+unsigned int a=50,b=59,c=23,mode=0,key1_s,key2_s,key3_s,key4_s,x,c_n,b_n;
+int key_mode,a_s,b_s,c_s;
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim==&htim3)
+	{
+		a++;
+		if(a>59)  
+		{
+			a=0;  
+			b++;
+			if(b>59)
+			{
+				b=0;
+				c++;	
+				if(c>23)
+				{
+					c=0;
+				}
+			}
+		}
+		if(c==c_n&&b==b_n)
+		{
+			x++;
+		}
+		if(c!=c_n||b!=b_n)
+		{
+			x=0;
+		}
+		Start_TIM_Handle(htim3);
+	}
+}
+void lcd_display()
+{
+	if(mode==0)
+	{
+		LCD_DisplayChar(Line4,(320-(16*13)),(a%10)+48);
+		LCD_DisplayChar(Line4,(320-(16*12)),(a/10)+48);
+		LCD_DisplayChar(Line4,(320-(16*11)),':');
+		LCD_DisplayChar(Line4,(320-(16*10)),(b%10)+48);
+		LCD_DisplayChar(Line4,(320-(16*9)),(b/10)+48);
+		LCD_DisplayChar(Line4,(320-(16*8)),':');
+		LCD_DisplayChar(Line4,(320-(16*7)),(c%10)+48);
+		LCD_DisplayChar(Line4,(320-(16*6)),(c/10)+48);
+		LCD_DisplayStringLine(Line2 ,(unsigned char *)"        Time      ");
+		LCD_DisplayStringLine(Line3 ,(unsigned char *)"        ****      ");
+		if(key_mode==1)
+		{
+			LCD_SetBackColor(Yellow);
+			LCD_SetTextColor(Yellow);
+			LCD_DisplayChar(Line4,(320-(16*12)),(a/10)+48);
+			LCD_DisplayChar(Line4,(320-(16*13)),(a%10)+48);
+			HAL_Delay(100);
+			LCD_SetTextColor(Black);
+			LCD_SetBackColor(White);
+				
+		}
+		if(key_mode==2)
+		{
+			LCD_SetBackColor(Yellow);
+			LCD_SetTextColor(Black);
+			
+			LCD_DisplayChar(Line4,(320-(16*9)),(b/10)+48);
+			LCD_DisplayChar(Line4,(320-(16*10)),(b%10)+48);HAL_Delay(100);
+			LCD_SetTextColor(Black);
+			LCD_SetBackColor(White);
+		}
+		if(key_mode==3)
+		{
+			LCD_SetBackColor(Yellow);
+			LCD_SetTextColor(Black);
+			
+			LCD_DisplayChar(Line4,(320-(16*6)),(c/10)+48);
+			LCD_DisplayChar(Line4,(320-(16*7)),(c%10)+48);HAL_Delay(100);
+			LCD_SetTextColor(Black);
+			LCD_SetBackColor(White);
+		}
+	}
+	if(mode==1)
+	{
+		char text_s[20];
+		sprintf(text_s,"         %d:%d      ",c_n,b_n);
+		LCD_DisplayStringLine(Line2 ,(unsigned char *)"        Clock      ");
+		LCD_DisplayStringLine(Line3 ,(unsigned char *)"        *****      ");
+		LCD_DisplayStringLine(Line4,(uchar*)text_s);
+	}
+}
+
+void key_scan()
+{
+	if(key1==0){HAL_Delay(80);key1_s=1;}if(key1==1&&key1_s==1){key1_s=0;mode++;if(mode>1){mode=0;}}
+	if(key2==0){HAL_Delay(80);key2_s=1;}if(key2==1&&key2_s==1){key2_s=0;a_s=a;b_s=b;c_s=c;key_mode++;if(key_mode>3){key_mode=0;}}
+	if(key3==0){HAL_Delay(80);key3_s=1;}if(key3==1&&key3_s==1){key3_s=0;
+	if(key_mode==1)
+	{
+		a_s++;
+		if(mode==1)
+		{
+			b_n++;
+		}
+		if(a_s>59)
+		{
+			a_s=0;
+		}
+		a=a_s;
+	}
+	if(key_mode==2)
+	{
+		b_s++;
+		if(mode==1)
+		{
+			c_n++;
+		}
+		if(b_s>59)
+		{
+			b_s=0;
+		}
+		b=b_s;
+	}
+	if(key_mode==3)
+	{
+		c_s++;
+		if(c_s>23)
+		{
+			c_s=0;
+		}
+		c=c_s;
+	}	
+	}
+	if(key4==0){HAL_Delay(80);key4_s=1;}if(key4==1&&key4_s==1){key4_s=0;
+	if(key_mode==1)
+	{
+		a_s--;
+		if(mode==1)
+		{
+			b_n--;
+		}
+		if(a_s<0)
+		{
+			a_s=59;
+		}
+		a=a_s;
+	}
+	if(key_mode==2)
+	{
+		b_s--;
+		if(mode==1)
+		{
+			c_n--;
+		}
+		if(b_s<0)
+		{
+			b_s=59;
+		}
+		b=b_s;
+	}
+	if(key_mode==3)
+	{
+		c_s--;
+		if(c_s<0)
+		{
+			c_s=23;
+		}
+		c=c_s;
+	}
+	}
+}
+void led_set(uchar led_scan)
+{
+	HAL_GPIO_WritePin(GPIOC,GPIO_PIN_All,GPIO_PIN_SET);  
+	HAL_GPIO_WritePin(GPIOC,led_scan<<8,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD,GPIO_PIN_2,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOD,GPIO_PIN_2,GPIO_PIN_RESET);
+}
+void nz_led()
+{
+	if(c==c_n&&b==b_n&&x==1)
+    {
+        led_set(0x80);
+    }
+    if(c==c_n&&b==b_n&&x==2)
+    {
+        led_set(0x00);
+    }
+    if(c==c_n&&b==b_n&&x==3)
+    {
+        led_set(0x80);
+    }
+    if(c==c_n&&b==b_n&&x==4)
+    {
+        led_set(0x00);
+    }
+    if(c==c_n&&b==b_n&&x==5)
+    {
+        led_set(0x80);
+    }
+    if(c==c_n&&b==b_n&&x==6)
+    {
+        led_set(0x00);
+    }
+}
